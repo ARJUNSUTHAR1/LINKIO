@@ -42,8 +42,7 @@ const SignUpForm = () => {
             await signUp.create({
                 emailAddress: email,
                 password,
-                firstName: name.split(" ")[0],
-                lastName: name.split(" ")[1],
+                username : name,
             });
 
             await signUp.prepareEmailAddressVerification({
