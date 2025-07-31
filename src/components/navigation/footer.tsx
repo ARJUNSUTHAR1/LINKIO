@@ -19,7 +19,7 @@ const Footer = () => {
                             Manage your links with ease.
                         </p>
                         <span className="mt-4 text-neutral-200 text-sm flex items-center">
-                            Made by <Link href="https://shreyas-sihasane.vercel.app/" className="font-semibold ml-1">Shreyas</Link>
+                            Made by <Link href="https://arjunsuthar.vercel.app/" className="font-semibold ml-1">Arjun</Link>
                         </span>
                     </div>
                 </AnimationContainer>
