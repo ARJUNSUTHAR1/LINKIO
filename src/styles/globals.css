@@ -104,6 +104,17 @@ html, body {
 .gradient {
   background: conic-gradient(from 230.29deg at 51.63% 52.16%, rgb(36, 0, 255) 0deg, rgb(0, 135, 255) 67.5deg, rgb(108, 39, 157) 198.75deg, rgb(24, 38, 163) 251.25deg, rgb(54, 103, 196) 301.88deg, rgb(105, 30, 255) 360deg);
 }
+@keyframes gradient-move {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.hover\:animate-gradient-move:hover {
+  animation: gradient-move 3s linear infinite;
+}
+
+
 
 .not-found {
   box-shadow: rgba(150, 18, 226, 0.3) 5px 5px;

@@ -9,7 +9,7 @@ import MagicCard from "@/components/ui/magic-card";
 import { COMPANIES, PROCESS } from "@/utils";
 import { REVIEWS } from "@/utils/constants/misc";
 import { currentUser } from "@clerk/nextjs/server";
-import { ArrowRightIcon, CreditCardIcon, StarIcon } from "lucide-react";
+import { ArrowRightIcon, CreditCardIcon, StarIcon,Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -30,27 +30,45 @@ const HomePage = async () => {
                             <span className="backdrop absolute inset-[1px] rounded-full bg-neutral-950 transition-colors duration-200 group-hover:bg-neutral-900" />
                             <span className="h-full w-full blur-md absolute bottom-0 inset-x-0 bg-gradient-to-tr from-primary/20"></span>
                             <span className="z-10 py-0.5 text-sm text-neutral-100 flex items-center justify-center gap-1">
-                                ✨ Manage links smarter
+                            <Sparkles className="w-6 h-6 text-blue-500" />
+                            <span>Manage URLs Smarter</span>
                                 <ArrowRightIcon className="ml-1 size-3 transition-transform duration-300 ease-in-out group-hover:translate-x-0.5" />
                             </span>
                         </button>
-                        <h1 className="text-foreground text-center py-6 text-5xl font-medium tracking-normal text-balance sm:text-6xl md:text-7xl lg:text-8xl !leading-[1.15] w-full font-heading">
-                            Smart Links with <span className="text-transparent bg-gradient-to-r from-violet-500 to-fuchsia-500 bg-clip-text inline-bloc">
-                                Precision
-                            </span>
+                        <h1 className="text-foreground text-center py-6 text-5xl font-medium tracking-normal sm:text-6xl md:text-7xl lg:text-8xl !leading-[1.15] w-full font-heading">
+                        {/* <span className="text-transparent bg-gradient-to-r from-blue-300 to-blue-500 bg-clip-text inline-bloc text-decoration-line"> */}
+                        <span className="text-transparent bg-gradient-to-b from-gray-300 to-gray-500 bg-clip-text inline-bloc">
+                        Smarter
+                        </span> <span className="text-transparent bg-gradient-to-r from-blue-100 to-blue-500 bg-clip-text inline-bloc">
+                        Links
+                        </span> 
+                        <span className="block text-transparent bg-gradient-to-b from-gray-300 to-gray-500 bg-clip-text inline-bloc">
+                        Stronger Impact 
+                        </span> 
+                        {/* </span>  */}
+                             
                         </h1>
                         <p className="mb-12 text-lg tracking-tight text-muted-foreground md:text-xl text-balance">
-                            Effortlessly streamline your link management with Lynking.
+                        One dashboard for every link that matters.
                             <br className="hidden md:block" />
                             <span className="hidden md:block">Shorten, track, and organize all your links in one place.</span>
                         </p>
-                        <div className="flex items-center justify-center whitespace-nowrap gap-4 z-50">
-                            <Button asChild>
-                                <Link href={user ? "/dashboard" : "/auth/sign-in"} className="flex items-center">
-                                    Start creating for free
-                                    <ArrowRightIcon className="w-4 h-4 ml-2" />
-                                </Link>
-                            </Button>
+                        <div className="flex items-center justify-center whitespace-nowrap gap-4">
+                        <Button variant="gradientHover" asChild>
+  <Link
+    href="/dashboard"
+    className="relative z-10 flex items-center gap-2 text-primary-foreground bg-primary hover:text-gray-100"
+  >
+    <span className="relative z-10">Start shortening for free</span>
+    <ArrowRightIcon className="w-4 h-4 relative z-10" />
+  </Link>
+</Button>
+
+
+
+
+
+
                         </div>
                     </AnimationContainer>
 
