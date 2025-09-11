@@ -25,7 +25,7 @@ const buttonVariants = cva(
         gradientHover: `
            relative z-0 overflow-hidden
   before:content-[''] before:absolute before:inset-0
-  before:bg-gradient-to-r before:from-blue-200 before:to-blue-500
+  before:bg-blue-500
   before:scale-0 before:origin-bottom before:rounded-full
   before:transition-transform before:duration-700
   hover:before:scale-150
