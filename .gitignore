@@ -4,10 +4,20 @@
 /node_modules
 /.pnp
 .pnp.js
-.yarn/install-state.gz
 
 # testing
-/coverage
+/coverage  
+
+# docker
+/docker-compose.prod.yml
+/docker-compose.yml
+/docker-compose.yaml
+/docker-compose.dev.yml
+/docker-compose.dev.yaml
+/docker-compose.dev.yml
+Dockerfile
+k8s-deployment.yaml
+nginx.conf
 
 # next.js
 /.next/
@@ -26,8 +36,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
-.env*.local
 .env
+.env*.local
 
 # vercel
 .vercel
@@ -36,5 +46,13 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# others
-todo.md
+# prisma
+/prisma/dev.db
+/prisma/dev.db-journal
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~

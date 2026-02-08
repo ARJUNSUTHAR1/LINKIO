@@ -9,14 +9,41 @@ import { motion } from "framer-motion";
 import { CheckCircleIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from 'react';
+import { useSession } from "next-auth/react";
 
 type Tab = "monthly" | "yearly";
 
 const PricingCards = () => {
+    const { data: session, status } = useSession();
+    const isAuthenticated = status === "authenticated";
 
     const MotionTabTrigger = motion(TabsTrigger);
 
     const [activeTab, setActiveTab] = useState<Tab>("monthly");
+
+    const getPlanButton = (planName: string, billing: "monthly" | "yearly") => {
+        if (!isAuthenticated) {
+            // Not logged in - all buttons go to sign-up
+            return {
+                text: planName === "Free" ? "Start for free" : "Get started",
+                href: `/auth/sign-up?plan=${planName.toLowerCase()}`,
+            };
+        }
+
+        // Logged in - dynamic behavior
+        if (planName === "Free") {
+            return {
+                text: "Go to Dashboard",
+                href: "/dashboard",
+            };
+        }
+
+        // Pro and Business - go to Stripe
+        return {
+            text: "Get started",
+            href: `/api/stripe/checkout?plan=${planName.toLowerCase()}&billing=${billing}`,
+        };
+    };
 
     return (
         <Tabs defaultValue="monthly" className="w-full flex flex-col items-center justify-center">
@@ -110,11 +137,11 @@ const PricingCards = () => {
                         </CardContent>
                         <CardFooter className="w-full mt-auto">
                             <Link
-                                href={plan.btn.href}
+                                href={getPlanButton(plan.name, "monthly").href}
                                 style={{ width: "100%" }}
                                 className={buttonVariants({ className: plan.name === "Pro" && "bg-blue-500 hover:bg-blue-500/80 text-white" })}
                             >
-                                {plan.btn.text}
+                                {getPlanButton(plan.name, "monthly").text}
                             </Link>
                         </CardFooter>
                     </Card>
@@ -180,11 +207,11 @@ const PricingCards = () => {
                         </CardContent>
                         <CardFooter className="w-full pt- mt-auto">
                             <Link
-                                href={plan.btn.href}
+                                href={getPlanButton(plan.name, "yearly").href}
                                 style={{ width: "100%" }}
                                 className={buttonVariants({ className: plan.name === "Pro" && "bg-blue-500 hover:bg-blue-500/80 text-white" })}
                             >
-                                {plan.btn.text}
+                                {getPlanButton(plan.name, "yearly").text}
                             </Link>
                         </CardFooter>
                     </Card>

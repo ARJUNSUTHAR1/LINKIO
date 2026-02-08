@@ -8,15 +8,11 @@ import MagicBadge from "@/components/ui/magic-badge";
 import MagicCard from "@/components/ui/magic-card";
 import { COMPANIES, PROCESS } from "@/utils";
 import { REVIEWS } from "@/utils/constants/misc";
-import { currentUser } from "@clerk/nextjs/server";
-import { ArrowRightIcon, CreditCardIcon, StarIcon,Sparkles } from "lucide-react";
+import { ArrowRightIcon, CreditCardIcon, StarIcon, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-const HomePage = async () => {
-
-    const user = await currentUser();
-
+const HomePage = () => {
     return (
         <div className="overflow-x-hidden scrollbar-hide size-full">
             {/* Hero Section */}

@@ -1,23 +1,20 @@
 "use client";
 
-import { getAuthStatus } from "@/actions";
-import { useQuery } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 const AuthCallbackPage = () => {
-
     const router = useRouter();
+    const { data: session, status } = useSession();
 
-    const { data } = useQuery({
-        queryKey: ["auth-status"],
-        queryFn: async () => await getAuthStatus(),
-        retry: true,
-        retryDelay: 500,
-    });
-
-    if (data?.success) {
-        router.push("/dashboard");
-    }
+    useEffect(() => {
+        if (status === "authenticated") {
+            router.push("/dashboard");
+        } else if (status === "unauthenticated") {
+            router.push("/auth/sign-in");
+        }
+    }, [status, router]);
 
     return (
         <div className="flex items-center justify-center flex-col h-screen relative">
@@ -26,7 +23,7 @@ const AuthCallbackPage = () => {
                 Verifying your account...
             </p>
         </div>
-    )
+    );
 };
 
 export default AuthCallbackPage;

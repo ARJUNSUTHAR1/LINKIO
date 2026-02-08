@@ -1,39 +1,27 @@
 "use server";
 
+import { authOptions } from "@/lib/auth";
 import { db } from "@/lib";
-import { currentUser } from "@clerk/nextjs/server";
+import { getServerSession } from "next-auth";
 
 const getAuthStatus = async () => {
-    const user = await currentUser();
+    const session = await getServerSession(authOptions);
 
-    console.log("userrrrrrrrrrr", user);
-
-    if (!user?.id || !user?.primaryEmailAddress?.emailAddress) {
+    if (!session?.user?.email) {
         return { error: "User not found" };
     }
 
-    let clerkId = user.id;
-
-    const existingUser = await db.user.findFirst({
+    const existingUser = await db.user.findUnique({
         where: {
-            clerkId,
+            email: session.user.email,
         },
     });
 
-    console.log("existingUser", existingUser);
-
     if (!existingUser) {
-        await db.user.create({
-            data: {
-                clerkId,
-                email: user.primaryEmailAddress.emailAddress,
-                name: user.fullName || user.firstName,
-                image: user.imageUrl,
-            },
-        });
+        return { error: "User not found" };
     }
 
-    return { success: true };
+    return { success: true, user: existingUser };
 };
 
 export default getAuthStatus;
