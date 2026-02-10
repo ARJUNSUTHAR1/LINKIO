@@ -31,8 +31,18 @@ model User {
   source           String?
   defaultWorkspace String?
 
+  // Stripe subscription fields
+  stripeCustomerId              String?   @unique
+  stripeSubscriptionId          String?   @unique
+  stripePriceId                 String?
+  plan                          String    @default("free") // free, pro, business
+  subscriptionStatus            String?   // active, canceled, past_due, trialing, etc.
+  subscriptionCurrentPeriodEnd  DateTime?
+
   @@index(source)
   @@index(defaultWorkspace)
+  @@index(stripeCustomerId)
+  @@index(stripeSubscriptionId)
 }
 
 model Account {

@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
+import { stripe, STRIPE_PLANS } from "@/lib/stripe";
 
 export async function GET(req: NextRequest) {
   try {
@@ -11,41 +12,81 @@ export async function GET(req: NextRequest) {
     }
 
     const searchParams = req.nextUrl.searchParams;
-    const plan = searchParams.get("plan");
+    const plan = searchParams.get("plan")?.toLowerCase();
     const billing = searchParams.get("billing") || "monthly";
 
-    if (!plan) {
+    if (!plan || (plan !== "pro" && plan !== "business")) {
       return NextResponse.json(
-        { error: "Plan is required" },
+        { error: "Invalid plan selected" },
         { status: 400 }
       );
     }
 
-    // TODO: Integrate with Stripe
-    // For now, redirect to dashboard with a message
-    // In production, you would:
-    // 1. Create a Stripe checkout session
-    // 2. Redirect to Stripe checkout page
-    // 3. Handle webhook for successful payment
-    // 4. Update user's subscription in database
+    // Get the plan configuration
+    const planConfig = STRIPE_PLANS[plan as "pro" | "business"];
+    const billingConfig = billing === "yearly" ? planConfig.yearly : planConfig.monthly;
+    
+    let lineItems;
 
-    console.log("Stripe checkout request:", {
-      userId: session.user.id,
-      email: session.user.email,
-      plan,
-      billing,
+    // Check if we have pre-configured Price IDs
+    if (billingConfig.priceId) {
+      // Use pre-configured Price ID from Stripe Dashboard
+      lineItems = [
+        {
+          price: billingConfig.priceId,
+          quantity: 1,
+        },
+      ];
+    } else {
+      // Create price on-the-fly (useful for testing without setting up products in Stripe)
+      console.log(`Creating dynamic price for ${plan} ${billing}`);
+      lineItems = [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: planConfig.name,
+              description: planConfig.description,
+            },
+            unit_amount: billingConfig.price,
+            recurring: {
+              interval: billing === "yearly" ? "year" : "month",
+            },
+          },
+          quantity: 1,
+        },
+      ];
+    }
+
+    // Create Stripe checkout session
+    const checkoutSession = await stripe.checkout.sessions.create({
+      customer_email: session.user.email!,
+      client_reference_id: session.user.id,
+      mode: "subscription",
+      payment_method_types: ["card"],
+      line_items: lineItems,
+      success_url: `${req.nextUrl.origin}/dashboard/billing/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${req.nextUrl.origin}/pricing?canceled=true`,
+      metadata: {
+        userId: session.user.id,
+        plan: plan,
+        billing: billing,
+      },
+      subscription_data: {
+        metadata: {
+          userId: session.user.id,
+          plan: plan,
+          billing: billing,
+        },
+      },
     });
 
-    // Temporary: Redirect to dashboard with success message
-    const dashboardUrl = new URL("/dashboard", req.url);
-    dashboardUrl.searchParams.set("upgrade", "pending");
-    dashboardUrl.searchParams.set("plan", plan);
-    
-    return NextResponse.redirect(dashboardUrl);
-  } catch (error) {
+    // Redirect to Stripe checkout
+    return NextResponse.redirect(checkoutSession.url!);
+  } catch (error: any) {
     console.error("Stripe checkout error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: error?.message || "Failed to create checkout session" },
       { status: 500 }
     );
   }

@@ -6,20 +6,78 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn, PLANS } from "@/utils";
 import { motion } from "framer-motion";
-import { CheckCircleIcon } from "lucide-react";
+import { CheckCircleIcon, Crown } from "lucide-react";
 import Link from "next/link";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from "next-auth/react";
+import { Badge } from "@/components/ui/badge";
 
 type Tab = "monthly" | "yearly";
 
+interface SubscriptionData {
+  plan: string;
+  status: string;
+  currentPeriodEnd: string | null;
+  hasActiveSubscription: boolean;
+}
+
 const PricingCards = () => {
-    const { data: session, status } = useSession();
+    const { data: session, status, update: updateSession } = useSession();
     const isAuthenticated = status === "authenticated";
 
     const MotionTabTrigger = motion(TabsTrigger);
 
     const [activeTab, setActiveTab] = useState<Tab>("monthly");
+    const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
+    const [loadingSubscription, setLoadingSubscription] = useState(true);
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            fetchSubscription();
+        } else {
+            setLoadingSubscription(false);
+            setSubscription(null);
+        }
+    }, [isAuthenticated]);
+
+    const fetchSubscription = async () => {
+        try {
+            const response = await fetch("/api/user/subscription");
+            if (response.ok) {
+                const data = await response.json();
+                setSubscription(data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch subscription:", error);
+        } finally {
+            setLoadingSubscription(false);
+        }
+    };
+
+    const getPlanHierarchy = (planName: string): number => {
+        const hierarchy: { [key: string]: number } = {
+            free: 0,
+            pro: 1,
+            business: 2,
+        };
+        return hierarchy[planName.toLowerCase()] || 0;
+    };
+
+    const shouldShowPlan = (planName: string): boolean => {
+        if (!isAuthenticated || !subscription) return true;
+        
+        const userPlan = subscription.plan?.toLowerCase() || "free";
+        const userPlanLevel = getPlanHierarchy(userPlan);
+        const planLevel = getPlanHierarchy(planName.toLowerCase());
+
+        // Hide free plan if user has a paid subscription
+        if (planName.toLowerCase() === "free" && userPlanLevel > 0 && subscription.hasActiveSubscription) {
+            return false;
+        }
+
+        // Show current plan and higher plans only (no downgrades)
+        return planLevel >= userPlanLevel;
+    };
 
     const getPlanButton = (planName: string, billing: "monthly" | "yearly") => {
         if (!isAuthenticated) {
@@ -27,22 +85,46 @@ const PricingCards = () => {
             return {
                 text: planName === "Free" ? "Start for free" : "Get started",
                 href: `/auth/sign-up?plan=${planName.toLowerCase()}`,
+                disabled: false,
             };
         }
 
-        // Logged in - dynamic behavior
+        // Check if user has this plan
+        const userPlan = subscription?.plan?.toLowerCase() || "free";
+        const currentPlan = planName.toLowerCase();
+
+        // If user already has this exact plan and it's active
+        if (userPlan === currentPlan && subscription?.hasActiveSubscription) {
+            return {
+                text: "Current Plan",
+                href: "/dashboard/settings",
+                disabled: true,
+            };
+        }
+
+        // Free plan button for free users
         if (planName === "Free") {
             return {
                 text: "Go to Dashboard",
                 href: "/dashboard",
+                disabled: false,
             };
         }
 
         // Pro and Business - go to Stripe
+        const isUpgrade = getPlanHierarchy(currentPlan) > getPlanHierarchy(userPlan);
+        
         return {
-            text: "Get started",
+            text: isUpgrade ? "Upgrade Plan" : "Get started",
             href: `/api/stripe/checkout?plan=${planName.toLowerCase()}&billing=${billing}`,
+            disabled: false,
         };
+    };
+
+    const isCurrentPlan = (planName: string) => {
+        if (!subscription) return false;
+        const userPlan = subscription.plan?.toLowerCase() || "free";
+        return userPlan === planName.toLowerCase() && subscription.hasActiveSubscription;
     };
 
     return (
@@ -89,14 +171,25 @@ const PricingCards = () => {
             </TabsList>
 
             <TabsContent value="monthly" className="grid grid-cols-1 lg:grid-cols-3 gap-5 w-full md:gap-8 flex-wrap max-w-5xl mx-auto pt-6">
-                {PLANS.map((plan) => (
+                {PLANS.filter(plan => shouldShowPlan(plan.name)).map((plan) => {
+                    const isCurrent = isCurrentPlan(plan.name);
+                    const buttonData = getPlanButton(plan.name, "monthly");
+                    
+                    return (
                     <Card
                         key={plan.name}
                         className={cn(
-                            "flex flex-col w-full border-border rounded-xl",
-                            plan.name === "Pro" && "border-2 border-blue-500"
+                            "flex flex-col w-full border-border rounded-xl relative",
+                            plan.name === "Pro" && "border-2 border-blue-500",
+                            isCurrent && "border-2 border-primary"
                         )}
                     >
+                        {isCurrent && (
+                            <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary">
+                                <Crown className="w-3 h-3 mr-1" />
+                                Current Plan
+                            </Badge>
+                        )}
                         <CardHeader className={cn(
                             "border-b border-border",
                             plan.name === "Pro" ? "bg-blue-500/[0.07]" : "bg-foreground/[0.03]"
@@ -136,26 +229,54 @@ const PricingCards = () => {
                             ))}
                         </CardContent>
                         <CardFooter className="w-full mt-auto">
-                            <Link
-                                href={getPlanButton(plan.name, "monthly").href}
-                                style={{ width: "100%" }}
-                                className={buttonVariants({ className: plan.name === "Pro" && "bg-blue-500 hover:bg-blue-500/80 text-white" })}
-                            >
-                                {getPlanButton(plan.name, "monthly").text}
-                            </Link>
+                            {buttonData.disabled ? (
+                                <button
+                                    disabled
+                                    className={buttonVariants({ 
+                                        className: cn(
+                                            "w-full cursor-not-allowed opacity-60",
+                                            isCurrent && "bg-primary"
+                                        )
+                                    })}
+                                >
+                                    {buttonData.text}
+                                </button>
+                            ) : (
+                                <Link
+                                    href={buttonData.href}
+                                    style={{ width: "100%" }}
+                                    className={buttonVariants({ 
+                                        className: plan.name === "Pro" && "bg-blue-500 hover:bg-blue-500/80 text-white" 
+                                    })}
+                                >
+                                    {buttonData.text}
+                                </Link>
+                            )}
                         </CardFooter>
                     </Card>
-                ))}
+                    );
+                })}
             </TabsContent>
             <TabsContent value="yearly" className="grid grid-cols-1 lg:grid-cols-3 gap-5 w-full md:gap-8 flex-wrap max-w-5xl mx-auto pt-6">
-                {PLANS.map((plan) => (
+                {PLANS.filter(plan => shouldShowPlan(plan.name)).map((plan) => {
+                    const isCurrent = isCurrentPlan(plan.name);
+                    const buttonData = getPlanButton(plan.name, "yearly");
+                    
+                    return (
                     <Card
                         key={plan.name}
                         className={cn(
-                            "flex flex-col w-full border-border rounded-xl",
-                            plan.name === "Pro" && "border-2 border-blue-500"
+                            "flex flex-col w-full border-border rounded-xl relative",
+                            plan.name === "Pro" && "border-2 border-blue-500",
+                            isCurrent && "border-2 border-primary"
                         )}
                     >
+                        {isCurrent && (
+                            <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-primary">
+                                <Crown className="w-3 h-3 mr-1" />
+                                Current Plan
+                            </Badge>
+                        )}
                         <CardHeader className={cn(
                             "border-b border-border",
                             plan.name === "Pro" ? "bg-blue-500/[0.07]" : "bg-foreground/[0.03]"
@@ -206,16 +327,33 @@ const PricingCards = () => {
                             ))}
                         </CardContent>
                         <CardFooter className="w-full pt- mt-auto">
-                            <Link
-                                href={getPlanButton(plan.name, "yearly").href}
-                                style={{ width: "100%" }}
-                                className={buttonVariants({ className: plan.name === "Pro" && "bg-blue-500 hover:bg-blue-500/80 text-white" })}
-                            >
-                                {getPlanButton(plan.name, "yearly").text}
-                            </Link>
+                            {buttonData.disabled ? (
+                                <button
+                                    disabled
+                                    className={buttonVariants({ 
+                                        className: cn(
+                                            "w-full cursor-not-allowed opacity-60",
+                                            isCurrent && "bg-primary"
+                                        )
+                                    })}
+                                >
+                                    {buttonData.text}
+                                </button>
+                            ) : (
+                                <Link
+                                    href={buttonData.href}
+                                    style={{ width: "100%" }}
+                                    className={buttonVariants({ 
+                                        className: plan.name === "Pro" && "bg-blue-500 hover:bg-blue-500/80 text-white" 
+                                    })}
+                                >
+                                    {buttonData.text}
+                                </Link>
+                            )}
                         </CardFooter>
                     </Card>
-                ))}
+                    );
+                })}
             </TabsContent>
         </Tabs>
     )

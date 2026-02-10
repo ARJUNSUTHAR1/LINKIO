@@ -74,30 +74,46 @@ export const authOptions: NextAuthOptions = {
         session.user.name = token.name;
         session.user.email = token.email;
         session.user.image = token.picture as string;
+        session.user.plan = token.plan as string;
+        session.user.subscriptionStatus = token.subscriptionStatus as string;
       }
 
       return session;
     },
     async jwt({ token, user }) {
+      // If this is the first sign in (user object exists)
       if (user) {
         token.id = user.id;
         token.email = user.email;
         token.name = user.name;
         token.picture = user.image;
-        return token;
       }
 
-      const dbUser = await db.user.findFirst({
-        where: {
-          email: token.email!,
-        },
-      });
+      // Always fetch the latest user data from database to get subscription updates
+      // This ensures the session always has the most current plan info
+      if (token.email) {
+        const dbUser = await db.user.findFirst({
+          where: {
+            email: token.email,
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            plan: true,
+            subscriptionStatus: true,
+          },
+        });
 
-      if (dbUser) {
-        token.id = dbUser.id;
-        token.name = dbUser.name;
-        token.email = dbUser.email;
-        token.picture = dbUser.image;
+        if (dbUser) {
+          token.id = dbUser.id;
+          token.name = dbUser.name;
+          token.email = dbUser.email;
+          token.picture = dbUser.image;
+          token.plan = dbUser.plan;
+          token.subscriptionStatus = dbUser.subscriptionStatus;
+        }
       }
 
       return token;
