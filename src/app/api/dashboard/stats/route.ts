@@ -31,7 +31,9 @@ export async function GET() {
     let clicksToday = 0;
     let clicksThisWeek = 0;
     let clicksThisMonth = 0;
-    const uniqueVisitors = new Set();
+    // Calculate unique visitors based on country+device+browser combination as a proxy
+    // Since we don't store IP addresses, we use this as an approximation
+    const uniqueVisitors = new Set<string>();
 
     links.forEach((link) => {
       link.analytics.forEach((analytic) => {
@@ -47,9 +49,9 @@ export async function GET() {
           clicksThisMonth++;
         }
 
-        if (analytic.ipAddress) {
-          uniqueVisitors.add(analytic.ipAddress);
-        }
+        // Use combination of country, device, and browser as a unique visitor identifier
+        const visitorKey = `${analytic.country || 'unknown'}-${analytic.device || 'unknown'}-${analytic.browser || 'unknown'}`;
+        uniqueVisitors.add(visitorKey);
       });
     });
 

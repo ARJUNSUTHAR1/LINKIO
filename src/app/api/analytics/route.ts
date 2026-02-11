@@ -113,7 +113,6 @@ export async function GET(req: NextRequest) {
       .slice(-30);
 
     const analytics = links.map(link => {
-      const uniqueIps = new Set(link.analytics.map(a => a.ipAddress).filter(Boolean));
       const countries = link.analytics.map(a => a.country).filter(Boolean);
       const devices = link.analytics.map(a => a.device).filter(Boolean);
       
@@ -133,11 +132,19 @@ export async function GET(req: NextRequest) {
         ? link.analytics[0].timestamp 
         : null;
 
+      // Calculate unique visitors based on unique country+device combinations as a proxy
+      // Since we don't store IP addresses, we use this as an approximation
+      const uniqueVisitors = new Set(
+        link.analytics
+          .map(a => `${a.country || 'unknown'}-${a.device || 'unknown'}`)
+          .filter(Boolean)
+      ).size;
+
       return {
         linkKey: link.key,
         url: link.url,
         clicks: link.clicks,
-        uniqueVisitors: uniqueIps.size,
+        uniqueVisitors,
         topCountry,
         topDevice,
         lastClick,

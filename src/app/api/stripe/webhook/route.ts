@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
           // Get subscription details
           const subscription = await stripe.subscriptions.retrieve(
             session.subscription as string
-          );
+          ) as Stripe.Subscription;
 
           // Update user's subscription in database
           await prisma.user.update({
@@ -63,7 +63,9 @@ export async function POST(req: NextRequest) {
               stripePriceId: subscription.items.data[0].price.id,
               plan: plan,
               subscriptionStatus: subscription.status,
-              subscriptionCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
+              subscriptionCurrentPeriodEnd: (subscription as any).current_period_end 
+                ? new Date((subscription as any).current_period_end * 1000)
+                : null,
             },
           });
 
@@ -85,7 +87,9 @@ export async function POST(req: NextRequest) {
           where: { stripeSubscriptionId: subscription.id },
           data: {
             subscriptionStatus: subscription.status,
-            subscriptionCurrentPeriodEnd: new Date(subscription.current_period_end * 1000),
+            subscriptionCurrentPeriodEnd: (subscription as any).current_period_end
+              ? new Date((subscription as any).current_period_end * 1000)
+              : null,
             stripePriceId: subscription.items.data[0].price.id,
           },
         });
@@ -116,9 +120,9 @@ export async function POST(req: NextRequest) {
         const invoice = event.data.object as Stripe.Invoice;
         
         // Update subscription status
-        if (invoice.subscription) {
+        if ((invoice as any).subscription) {
           await prisma.user.update({
-            where: { stripeSubscriptionId: invoice.subscription as string },
+            where: { stripeSubscriptionId: (invoice as any).subscription as string },
             data: {
               subscriptionStatus: "past_due",
             },

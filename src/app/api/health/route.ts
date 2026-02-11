@@ -22,8 +22,12 @@ export async function GET() {
   }
 
   try {
-    await redis.ping();
-    checks.services.redis = "healthy";
+    if (redis) {
+      await redis.ping();
+      checks.services.redis = "healthy";
+    } else {
+      checks.services.redis = "unavailable";
+    }
   } catch (error) {
     checks.services.redis = "unhealthy";
     checks.status = "degraded";

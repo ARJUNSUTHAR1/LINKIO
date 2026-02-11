@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
             },
             unit_amount: billingConfig.price,
             recurring: {
-              interval: billing === "yearly" ? "year" : "month",
+              interval: (billing === "yearly" ? "year" : "month") as "month" | "year",
             },
           },
           quantity: 1,
