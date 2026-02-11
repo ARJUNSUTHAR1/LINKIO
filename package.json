@@ -4,6 +4,7 @@
   "private": true,
   "description": "Enterprise-grade link shortening platform with advanced security and scalability",
   "author": "Your Name",
+  "packageManager": "pnpm@10.0.0",
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
